@@ -33,13 +33,13 @@ If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out
 
 ## Bookkeeping
 
-Every new thread creates a tk102pid\_PID directory which contains the following bookkeeping information:
+Every new thread creates a **tk102pid\_PID** directory which contains the following bookkeeping information:
 
-* *last* contains the PID of the process, the file's timestamp is used by main thread to check
+* **last** contains the PID of the process, the file's timestamp is used by main thread to check
 timeout. Each time a heart beat is received, the file is 'touched'.
-* *imei* contains the trackers imei number.
-* *info* last lat/lon/... received by tracker, in Python "pickle" format.
-* *bytes* total number of bytes received by and sent to the tracker.
+* **imei** contains the trackers imei number.
+* **info** last lat/lon/... received by tracker, in Python "pickle" format.
+* **bytes** total number of bytes received by and sent to the tracker.
 
 ## Other
 
