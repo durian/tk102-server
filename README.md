@@ -29,14 +29,20 @@ cmd  : read by the thread for commands. After a command is read, the cmd file is
 
 ## Bookkeeping
 
-Every new thread creates atk102pid_PID directory which contains the following bookkeeping information:
+Every new thread creates a tk102pid_PID directory which contains the following bookkeeping information:
 
-* last : contains the PID of the process, the file's timestamp is used by mean thread to check
+last
+:  contains the PID of the process, the file's timestamp is used by main thread to check
 timeout. Each time a heart beat is received, the file is 'touched'.
 
-* imei : contains the trackers imei number.
-* info : last lat/lon/... received by tracker, in Python "pickle" format.
-* bytes: total number of bytes received by and sent to the tracker.
+imei
+:  contains the trackers imei number.
+
+info
+:  last lat/lon/... received by tracker, in Python "pickle" format.
+
+bytes
+:  total number of bytes received by and sent to the tracker.
 
 ## Other
 
