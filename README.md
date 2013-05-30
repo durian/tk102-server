@@ -7,13 +7,15 @@ The python script listens on a port and handles connections.
 
 Implements the following protocol:
 
-0) tracker sends: ##,imei:_IMEI_,A;
-1) server responds: LOAD
-2) tracker sends: _IMEI_;
-2) server responds: ON
-   OR
-2) tracker sends: imei:_IMEI_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
-2) coordinates and other values are calculated and stored.
+0. tracker sends: ##,imei:_IMEI_,A;
+1. server responds: LOAD
+2. tracker sends: _IMEI_;
+2. server responds: ON
+
+OR
+
+2. tracker sends: imei:_IMEI_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
+2. coordinates and other values are calculated and stored.
 
 If server does not receive _IMEI_; every 90 seconds, it times out (after 182 seconds), and exits the
 thread handling the tracker. 
