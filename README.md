@@ -1,5 +1,3 @@
-source code will be uploaded shortly
-
 # tk102-server
 
 Server to handle the GPS strings sent by tk102-2/B compatible GPS trackers (tk103, tk104 ?).
