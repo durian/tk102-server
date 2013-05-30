@@ -10,16 +10,18 @@ The python script listens on a port and handles connections.
 
 0. tracker sends: <code>##,imei:\_IMEI\_,A;</code>
 1. server responds: <code>LOAD</code>
-2. tracker sends: <code>\_IMEI\_;</code>
+
+THEN 
+
+1. tracker sends: <code>\_IMEI\_;</code>
 2. server responds: <code>ON</code>
 
 OR
 
-2. tracker sends: <code>imei:\_IMEI\_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;</code>
+1. tracker sends: <code>imei:\_IMEI\_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;</code>
 2. coordinates and other values are calculated and stored.
 
-If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out (after 182 seconds), and exits the
-thread handling the tracker. 
+If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out (after 182 seconds), and exits the thread handling the tracker. 
 
 ## Sending commands
 
@@ -31,17 +33,13 @@ thread handling the tracker.
 
 ## Bookkeeping
 
-Every new thread creates a tk102pid_PID directory which contains the following bookkeeping information:
+Every new thread creates a tk102pid\_PID directory which contains the following bookkeeping information:
 
-last
-:    contains the PID of the process, the file's timestamp is used by main thread to check
+* *last* contains the PID of the process, the file's timestamp is used by main thread to check
 timeout. Each time a heart beat is received, the file is 'touched'.
-imei
-:    contains the trackers imei number.
-info
-:    last lat/lon/... received by tracker, in Python "pickle" format.
-bytes
-:    total number of bytes received by and sent to the tracker.
+* *imei* contains the trackers imei number.
+* *info* last lat/lon/... received by tracker, in Python "pickle" format.
+* *bytes* total number of bytes received by and sent to the tracker.
 
 ## Other
 
