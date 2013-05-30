@@ -1,6 +1,6 @@
 # tk102-server
 
-Server to handle the GPS strings sent by tk102-2/B compatible GPS trackers.
+Server to handle the GPS strings sent by tk102-2/B compatible GPS trackers (tk103, tk104 ?).
 
 The python script listens on a port and handles connections. 
 
@@ -21,7 +21,7 @@ thread handling the tracker.
 
 ## Sending commands
 
-cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, 'echo "C600" > cmd' sets the interval on the tracker to 10 minutes. It sends the command: **,_IMEI_,C,600s to the tracker. The following are implemented:
+cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: **,_IMEI_,C,600s to the tracker. The following are implemented:
 
 * Cnnn : sets tracker interval to nnn seconds
 * E    : clears alarm message
