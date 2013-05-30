@@ -21,7 +21,7 @@ thread handling the tracker.
 
 ## Sending commands
 
-cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: <code>**,_IMEI_,C,600s</code> to the tracker. The following are implemented:
+* cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: <code>**,_IMEI_,C,600s</code> to the tracker. The following are implemented:
 
 * Cnnn : sets tracker interval to nnn seconds
 * E    : clears alarm message
@@ -46,4 +46,4 @@ bytes
 
 ## Other
 
-Protocol partly from: https://docs.google.com/spreadsheet/ccc?key=0AtQofkYKWsMudDVHTi1ZNjI4emxlTVlhc3V1RWpsc0E#gid=0
+Protocol partly from [this google doc](https://docs.google.com/spreadsheet/ccc?key=0AtQofkYKWsMudDVHTi1ZNjI4emxlTVlhc3V1RWpsc0E#gid=0)
