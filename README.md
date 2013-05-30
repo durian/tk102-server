@@ -41,6 +41,8 @@ timeout. Each time a heart beat is received, the file is 'touched'.
 * **info** last lat/lon/... received by tracker, in Python "pickle" format.
 * **bytes** total number of bytes received by and sent to the tracker.
 
+After the tracker has disappeared, a file called **killed** is created in the directory to signify that the directory contents are no long "live". It will be removed on the next start-up of the server.
+
 ## Other
 
 Protocol partly from [this google doc](https://docs.google.com/spreadsheet/ccc?key=0AtQofkYKWsMudDVHTi1ZNjI4emxlTVlhc3V1RWpsc0E#gid=0)
