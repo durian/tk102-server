@@ -6,22 +6,22 @@ The python script listens on a port and handles connections.
 
 ## Implements the following protocol:
 
-0. tracker sends: ##,imei:_IMEI_,A;
-1. server responds: LOAD
-2. tracker sends: _IMEI_;
-2. server responds: ON
+0. tracker sends: <code>##,imei:_IMEI_,A;</code>
+1. server responds: <code>LOAD</code>
+2. tracker sends: <code>_IMEI_;</code>
+2. server responds: <code>ON</code>
 
 OR
 
-2. tracker sends: imei:_IMEI_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
+2. tracker sends: <code>imei:_IMEI_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;</code>
 2. coordinates and other values are calculated and stored.
 
-If server does not receive _IMEI_; every 90 seconds, it times out (after 182 seconds), and exits the
+If server does not receive <code>_IMEI_;</code> every 90 seconds, it times out (after 182 seconds), and exits the
 thread handling the tracker. 
 
 ## Sending commands
 
-cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: **,_IMEI_,C,600s to the tracker. The following are implemented:
+cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: <code>**,_IMEI_,C,600s</code> to the tracker. The following are implemented:
 
 * Cnnn : sets tracker interval to nnn seconds
 * E    : clears alarm message
