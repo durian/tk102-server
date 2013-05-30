@@ -102,7 +102,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
             fp_last.close()
         except:
             self.error("Could not create 'last' file.")
-            self.loop = false
+            self.loop = False
         # LOOP
         while self.loop:
             data = ""
