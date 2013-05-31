@@ -19,7 +19,7 @@ OR
 1. tracker sends: <code>imei:\_IMEI\_,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;</code>
 2. coordinates and other values are calculated and stored.
 
-If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out (after 182 seconds), and exits the thread handling the tracker. 
+If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out (after 182 seconds), and kills the thread handling the tracker.
 
 ## Sending commands
 
@@ -39,7 +39,7 @@ timeout. Each time a heart beat is received, the file is 'touched'.
 * **info** last lat/lon/... received by tracker, in Python "pickle" format.
 * **bytes** total number of bytes received by and sent to the tracker.
 
-After the tracker has disappeared, a file called **killed** is created in the directory to signify that the directory contents are no long "live". It will be removed on the next start-up of the server.
+After the tracker has disappeared, a file called **exit** is created in the directory to signify that the directory contents are no long "live". It will be removed on the next start-up of the server.
 
 ## Other
 

@@ -118,6 +118,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         self.imeifile  = self.ctldir+"/imei"  #contains imei nr
         self.infofile  = self.ctldir+"/info"  #contains last lat,lon,... (pickled)
         self.bytesfile = self.ctldir+"/bytes" #contains bytes received/sent (pickled)
+        self.exitfile  = self.ctldir+"/exit"  #written on tracker exit/disappearance
         self.lat       = 0
         self.lon       = 0
         self.spd       = 0
@@ -155,13 +156,18 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     self.error("Not data.")
                     self.counter = 0
             except socket.error as err:
+                if str(err) == "[Errno 35] Resource temporarily unavailable":
+                    time.sleep(0.1) #OS X bug workaround
+                    continue
                 self.error("Socket error.")
+                self.counter = 0
             if data == "":
                 self.counter = self.counter - 1
             else:
                 self.bytes_r += len(data)
                 data = data.rstrip()
                 self.info("recv("+data+")")
+            
             # "##,imei:35971004071XXXX,A;
             if data[0:7] == "##,imei": # FIRST CONTACT
                 imei_re = re.compile("##,imei:(\d+),A;")
@@ -272,7 +278,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                         self.bytes_s += (len(cmd) + 1)
                     if cmd[0:1] == 'G': #clear "help me" message
                         cmd = "**,imei:"+self.imei+",G"
-                        elf.info(cmd)
+                        self.info(cmd)
                         time.sleep(1)
                         self.request.send(cmd+"\n")
                         self.bytes_s += (len(cmd) + 1)
@@ -286,6 +292,13 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
 
     def finish(self):
         self.info('finish')
+        try:
+            fp_exit = open(self.exitfile, 'w')
+            fp_exit.write(self.imei)
+            fp_exit.close()
+        except:
+            self.error("Could not create 'exit' file")
+        self.info( "bytes read="+str(self.bytes_r)+" bytes sent="+str(self.bytes_s) )
         return SocketServer.BaseRequestHandler.finish(self)
 
 class TK102Server(SocketServer.ForkingMixIn, SocketServer.TCPServer):
@@ -294,8 +307,7 @@ class TK102Server(SocketServer.ForkingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
 
 def send_email(sender, recipient, subject, body ):
-    #sender = "peter@berck.se"
-    header_charset = 'UTF-8' #'ISO-8859-1'
+    header_charset = 'UTF-8' 
 
     # We must choose the body charset manually
     for body_charset in 'UTF-8', 'US-ASCII', 'ISO-8859-1', 'UTF-8':
@@ -395,7 +407,7 @@ if __name__ == '__main__':
                 if d[0:8] == "tk102pid":
                     if not os.path.exists(d+"/last"): #not live
                         continue 
-                    if os.path.exists(d+"/killed"): #was killed
+                    if os.path.exists(d+"/exit"): #was killed/exited
                         continue
                     # time between now and last sign of life:
                     td = int(time.time()-float(os.stat(d+"/last").st_atime))
@@ -426,11 +438,11 @@ if __name__ == '__main__':
                             glogger.error("Could not kill process "+str(tpid)) #probablyy already gone
                         # create killed file
                         try:
-                            fp_killed = open(d+"/killed", 'w')
+                            fp_killed = open(d+"/exit", 'w')
                             fp_killed.write(str(tpid))
                             fp_killed.close()
                         except:
-                            glogger.exception("Could not create 'kill' file.")
+                            glogger.exception("Could not create 'exit' file.")
                         # read nr bytes
                         try:
                             with open(d+"/bytes", "r") as f:
