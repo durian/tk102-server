@@ -14,13 +14,17 @@ import signal
 import operator
 import shutil
 import re
-import pickle
+from smtplib import SMTP
+from email.MIMEText import MIMEText
+from email.Header import Header
+from email.Utils import parseaddr, formataddr
+from email.mime.multipart import MIMEMultipart
+from email.encoders import encode_7or8bit
+from collections import namedtuple
 try:
-    import httplib2
+    import cPickle as pickle
 except:
-    pass
-
-# Redo with a queue where threads put lat/lon to send_remote?
+    import pickle
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s')
 #
@@ -41,6 +45,8 @@ console.setLevel(logging.INFO)
 glogger.addHandler(console)
 #
 
+Pos = namedtuple('Pos', 'imei, lat, lon, spd, bearing, acc')
+
 class TK102RequestHandler(SocketServer.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.logger = glogger #logging.getLogger('TK102Handler')
@@ -56,6 +62,41 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
 
     def error(self, msg):
         self.logger.error("[%s] "+str(msg), self.imei)
+
+    def on_start(self):
+        """
+        Called when a new tracker is initialized.
+        """
+        send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
+
+    def on_finish(self):
+        """
+        Called before the thread exits.
+        """
+        pass
+
+    def on_position(self):
+        """
+        Called everytime we receive a GPS position string.
+        """
+        pass
+
+    def on_stationary(self):
+        """
+        Called if last two positions are the same.
+        """
+        pass
+
+    def on_start_move(self):
+        """
+        Called if moving again after stationary destection.
+        """
+        pass
+
+    def send(self, msg):
+        self.debug('send: '+msg)
+        self.request.send(msg+"\n")
+        self.bytes_s += len(msg)+1
 
     def handle(self):
         self.server.socket.setblocking(0)
@@ -103,7 +144,9 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         except:
             self.error("Could not create 'last' file.")
             self.loop = False
+        #
         # LOOP
+        #
         while self.loop:
             data = ""
             try:
@@ -136,25 +179,20 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     self.error("Could not create 'imei' file")
                     self.loop = False
                 #os.utime(last, None)
-                self.debug('send: LOAD')
-                self.request.send("LOAD\n")
-                self.bytes_s += 5
+                self.send("LOAD")
+                self.on_start()
                 time.sleep(1)
                 # 
                 for (rex, out_str) in startups:
                     if re.match(rex, self.imei):
                         self.debug('Found startup entry.')
                         cmd = out_str.replace("IMEI", self.imei)
-                        self.debug('send: ('+cmd+')')
-                        self.request.send(cmd+"\n")
-                        self.bytes_s += (len(cmd) + 1)
+                        self.send(cmd)
                 #
                 self.last = time.time()
                 self.counter = self.counts
             if data == self.imei+";": #"35971004071XXXX;":
-                self.debug('send: ON')
-                self.request.send("ON\n")
-                self.bytes_s += 3
+                self.send("ON")
                 self.last = time.time()
                 self.counter = self.counts
                 os.utime(self.lastfile, None)
@@ -255,6 +293,52 @@ class TK102Server(SocketServer.ForkingMixIn, SocketServer.TCPServer):
     daemon_threads      = True
     allow_reuse_address = True
 
+def send_email(sender, recipient, subject, body ):
+    #sender = "peter@berck.se"
+    header_charset = 'UTF-8' #'ISO-8859-1'
+
+    # We must choose the body charset manually
+    for body_charset in 'UTF-8', 'US-ASCII', 'ISO-8859-1', 'UTF-8':
+        try:
+            body.encode(body_charset)
+        except UnicodeError:
+            pass
+        else:
+            break
+
+    # Split real name (which is optional) and email address parts
+    sender_name, sender_addr       = parseaddr(sender)
+    recipient_name, recipient_addr = parseaddr(recipient)
+
+    # We must always pass Unicode strings to Header, otherwise it will
+    # use RFC 2047 encoding even on plain ASCII strings.
+    sender_name    = str(Header(unicode(sender_name), header_charset))
+    recipient_name = str(Header(unicode(recipient_name), header_charset))
+
+    # Make sure email addresses do not contain non-ASCII characters
+    sender_addr    = sender_addr.encode('ascii')
+    recipient_addr = recipient_addr.encode('ascii')
+
+    # Create the message ('plain' stands for Content-Type: text/plain)
+    msg = MIMEText(body.encode(body_charset), 'plain', body_charset)
+
+    msg['From']    = formataddr((sender_name, sender_addr))
+    msg['To']      = formataddr((recipient_name, recipient_addr))
+    msg['Subject'] = Header(unicode(subject), header_charset)
+
+    smtp = SMTP(SMTPHOST, SMTPPORT) 
+    smtp.login(SMTPUSER, SMTPPASS)
+    smtp.sendmail(sender, recipient, msg.as_string())
+    '''
+    smtp = SMTP('smtp.gmail.com',587) #port 465 or 587
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.ehlo
+    smtp.login("USER@gmail.com", "PASS")
+    smtp.sendmail(sender, recipient, msg.as_string())
+    smtp.close()
+    '''
+
 def determine_td(d):
     """
     Difference between ctime of imei file (on creation) and the last
@@ -273,7 +357,11 @@ if __name__ == '__main__':
     import socket
     import threading
 
-    PORT = 9000
+    PORT     = 9000
+    SMTPHOST = "mail.SERVER"
+    SMTPPORT = 26
+    SMTPUSER = "mail.USER"
+    SMTPPASS = "mail.PASS"
 
     #startups = { ("35971004071XXXX", "**,imei:IMEI,C,300s") ]
     startups = [ ("\d+" , "**,imei:IMEI,C,300s") ] #if imei matches, send string, replaces IMEI with real imei.
