@@ -14,12 +14,6 @@ import signal
 import operator
 import shutil
 import re
-from smtplib import SMTP
-from email.MIMEText import MIMEText
-from email.Header import Header
-from email.Utils import parseaddr, formataddr
-from email.mime.multipart import MIMEMultipart
-from email.encoders import encode_7or8bit
 from collections import namedtuple
 try:
     import cPickle as pickle
@@ -112,29 +106,29 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         #if it hangs in recv
         cur_pid = os.getpid() #threading.current_thread() 
         self.logger.info("handle start, pid: "+str(cur_pid))
-        self.loop      = True
-        self.counts    = 120
-        self.counter   = self.counts
-        self.last      = time.time()
-        self.pid       = str(cur_pid)
-        self.imei      = "PID: "+self.pid     #until we get the real one
-        self.url       = ""
-        self.ctldir    = "tk102pid_"+self.pid
-        self.lastfile  = self.ctldir+"/last"  #touched, for timestamp
-        self.cmdfile   = self.ctldir+"/cmd"   #reads a command from this file if it exists
-        self.imeifile  = self.ctldir+"/imei"  #contains imei nr
-        self.infofile  = self.ctldir+"/info"  #contains last lat,lon,... (pickled)
-        self.bytesfile = self.ctldir+"/bytes" #contains bytes received/sent (pickled)
-        self.exitfile  = self.ctldir+"/exit"  #written on tracker exit/disappearance
-        self.lat       = 0
-        self.lon       = 0
-        self.spd       = 0
-        self.bearing   = 0
-        self.acc       = 0
-        self.pos       = None
-        self.bytes_r   = 0
-        self.bytes_s   = 0
-        self.posidx    = 0 # number of positions received
+        self.loop       = True
+        self.counts     = 120
+        self.counter    = self.counts
+        self.last       = time.time()
+        self.pid        = str(cur_pid)
+        self.imei       = "PID: "+self.pid     #until we get the real one
+        self.url        = ""
+        self.ctldir     = "tk102pid_"+self.pid
+        self.lastfile   = self.ctldir+"/last"  #touched, for timestamp
+        self.cmdfile    = self.ctldir+"/cmd"   #reads a command from this file if it exists
+        self.imeifile   = self.ctldir+"/imei"  #contains imei nr
+        self.infofile   = self.ctldir+"/info"  #contains last lat,lon,... (pickled)
+        self.bytesfile  = self.ctldir+"/bytes" #contains bytes received/sent (pickled)
+        self.exitfile   = self.ctldir+"/exit"  #written on tracker exit/disappearance
+        self.lat        = 0
+        self.lon        = 0
+        self.spd        = 0
+        self.bearing    = 0
+        self.acc        = 0
+        self.pos        = None
+        self.bytes_r    = 0
+        self.bytes_s    = 0
+        self.posidx     = 0 # number of positions received
         self.poshandler = None
 
         # create control dir
@@ -327,51 +321,6 @@ class TK102Server(SocketServer.ForkingMixIn, SocketServer.TCPServer):
     timeout             = 10
     daemon_threads      = True
     allow_reuse_address = True
-
-def send_email(sender, recipient, subject, body ):
-    header_charset = 'UTF-8' 
-
-    # We must choose the body charset manually
-    for body_charset in 'UTF-8', 'US-ASCII', 'ISO-8859-1', 'UTF-8':
-        try:
-            body.encode(body_charset)
-        except UnicodeError:
-            pass
-        else:
-            break
-
-    # Split real name (which is optional) and email address parts
-    sender_name, sender_addr       = parseaddr(sender)
-    recipient_name, recipient_addr = parseaddr(recipient)
-
-    # We must always pass Unicode strings to Header, otherwise it will
-    # use RFC 2047 encoding even on plain ASCII strings.
-    sender_name    = str(Header(unicode(sender_name), header_charset))
-    recipient_name = str(Header(unicode(recipient_name), header_charset))
-
-    # Make sure email addresses do not contain non-ASCII characters
-    sender_addr    = sender_addr.encode('ascii')
-    recipient_addr = recipient_addr.encode('ascii')
-
-    # Create the message ('plain' stands for Content-Type: text/plain)
-    msg = MIMEText(body.encode(body_charset), 'plain', body_charset)
-
-    msg['From']    = formataddr((sender_name, sender_addr))
-    msg['To']      = formataddr((recipient_name, recipient_addr))
-    msg['Subject'] = Header(unicode(subject), header_charset)
-
-    smtp = SMTP(SMTPHOST, SMTPPORT) 
-    smtp.login(SMTPUSER, SMTPPASS)
-    smtp.sendmail(sender, recipient, msg.as_string())
-    '''
-    smtp = SMTP('smtp.gmail.com',587) #port 465 or 587
-    smtp.ehlo()
-    smtp.starttls()
-    smtp.ehlo
-    smtp.login("USER@gmail.com", "PASS")
-    smtp.sendmail(sender, recipient, msg.as_string())
-    smtp.close()
-    '''
 
 def determine_td(d):
     """
