@@ -25,6 +25,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
+from POSHandler import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s')
 #
@@ -67,32 +68,37 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         Called when a new tracker is initialized.
         """
-        #send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
-        pass
+        #send_email("pberck@gmail.com", "pberck@gmail.com", "Tracker", "Tracker started");
+        if self.poshandler:
+            self.poshandler.on_start(self)
 
     def on_finish(self):
         """
         Called before the thread exits.
         """
-        pass
+        if self.poshandler:
+            self.poshandler.on_finish(self)
 
     def on_position(self):
         """
         Called everytime we receive a GPS position string.
         """
-        pass
+        if self.poshandler:
+            self.poshandler.on_position(self)
 
     def on_stationary(self):
         """
-        Called if last two positions are the same.
+        Called if last two positions are the same. To be implemented.
         """
-        pass
+        if self.poshandler:
+            self.poshandler.on_stationary(self)
 
     def on_start_move(self):
         """
-        Called if moving again after stationary destection.
+        Called if moving again after stationary destection. To be implemented.
         """
-        pass
+        if self.poshandler:
+            self.poshandler.on_start_move(self)
 
     def send(self, msg):
         self.debug('send: '+msg)
@@ -125,9 +131,12 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         self.spd       = 0
         self.bearing   = 0
         self.acc       = 0
+        self.pos       = None
         self.bytes_r   = 0
         self.bytes_s   = 0
         self.posidx    = 0 # number of positions received
+        self.poshandler = None
+
         # create control dir
         try:
             if not os.path.exists(self.ctldir):
@@ -174,7 +183,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                 data = data.rstrip()
                 self.info("line: ("+data+")")
 
-                # "##,imei:35971004071XXXX,A;
+                # "##,imei:359710040714629,A;
                 if data[0:7] == "##,imei": # FIRST CONTACT
                     imei_re = re.compile("##,imei:(\d+),A;")
                     m = imei_re.match(data)
@@ -192,8 +201,6 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                         self.loop = False
                     #os.utime(last, None)
                     self.send("LOAD")
-                    self.on_start()
-                    time.sleep(1)
                     # 
                     for (rex, out_str) in startups:
                         if re.match(rex, self.imei):
@@ -203,13 +210,16 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     #
                     self.last = time.time()
                     self.counter = self.counts
-                if data == self.imei+";": #"35971004071XXXX;":
+                    self.poshandler = POSHandler( self ) 
+                    self.on_start()
+
+                if data == self.imei+";": #"359710040714629;":
                     self.send("ON")
                     self.last = time.time()
                     self.counter = self.counts
                     os.utime(self.lastfile, None)
-                #imei:35971004071XXXX,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
-                #imei:35971004071XXXX,tracker,000000000,,L,,,177f,,a122,,,;
+                #imei:359710040714629,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
+                #imei:359710040714629,tracker,000000000,,L,,,177f,,a122,,,;
                 # check for L(ost) of F(ix) maybe also?  ^
                 if data[0:4] == "imei":
                     data = data[:-1] #remove ;
@@ -221,9 +231,9 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                         #print parts[7],parts[8],parts[9],parts[10]
                         #
                         # parse messages "help me", "et", etc?
-                        # imei:35971004071XXXX,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                        # imei:35971004071XXXX,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                        # imei:35971004071XXXX,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:359710040714629,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:359710040714629,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:359710040714629,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
                         if parts[8] != "":
                             #5620.2932 = ddmm.mmmm
                             #
@@ -251,6 +261,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                             self.pos = Pos(self.imei, self.lat,self.lon,self.spd,self.bearing,self.acc,self.posidx)
                             with open(self.infofile, "w") as f:
                                 pickle.dump(self.pos, f)
+                            self.on_position()
                             self.posidx += 1
                             #
                             msg = parts[1]
@@ -302,6 +313,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
 
     def finish(self):
         self.info('finish')
+        self.on_finish()
         try:
             fp_exit = open(self.exitfile, 'w')
             fp_exit.write(self.imei)
@@ -356,7 +368,7 @@ def send_email(sender, recipient, subject, body ):
     smtp.ehlo()
     smtp.starttls()
     smtp.ehlo
-    smtp.login("USER@gmail.com", "PASS")
+    smtp.login("pberck@gmail.com", "PASS")
     smtp.sendmail(sender, recipient, msg.as_string())
     smtp.close()
     '''
@@ -380,12 +392,12 @@ if __name__ == '__main__':
     import threading
 
     PORT     = 9000
-    SMTPHOST = "mail.SERVER"
+    SMTPHOST = "mail.kalenda.se"
     SMTPPORT = 26
-    SMTPUSER = "mail.USER"
-    SMTPPASS = "mail.PASS"
+    SMTPUSER = "kalendas"
+    SMTPPASS = "8Kyskum9"
 
-    #startups = { ("35971004071XXXX", "**,imei:IMEI,C,300s") ]
+    #startups = { ("359710040714629", "**,imei:IMEI,C,300s") ]
     startups = [ ("\d+" , "**,imei:IMEI,C,300s") ] #if imei matches, send string, replaces IMEI with real imei.
 
     # Remove left over directories form last time.
