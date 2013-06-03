@@ -45,7 +45,7 @@ console.setLevel(logging.INFO)
 glogger.addHandler(console)
 #
 
-Pos = namedtuple('Pos', 'imei, lat, lon, spd, bearing, acc')
+Pos = namedtuple('Pos', 'imei, lat, lon, spd, bearing, acc, idx')
 
 class TK102RequestHandler(SocketServer.BaseRequestHandler):
     def __init__(self, request, client_address, server):
@@ -67,7 +67,8 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         Called when a new tracker is initialized.
         """
-        send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
+        #send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
+        pass
 
     def on_finish(self):
         """
@@ -126,7 +127,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         self.acc       = 0
         self.bytes_r   = 0
         self.bytes_s   = 0
-        self.wkey      = "INVALID"
+        self.posidx    = 0 # number of positions received
         # create control dir
         try:
             if not os.path.exists(self.ctldir):
@@ -149,10 +150,10 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         # LOOP
         #
         while self.loop:
-            data = ""
+            sdata = ""
             try:
-                data = self.request.recv(1024)
-                if not data:
+                sdata = self.request.recv(1024)
+                if not sdata:
                     self.error("Not data.")
                     self.counter = 0
             except socket.error as err:
@@ -161,132 +162,141 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     continue
                 self.error("Socket error.")
                 self.counter = 0
-            if data == "":
+            if sdata == "":
                 self.counter = self.counter - 1
             else:
-                self.bytes_r += len(data)
+                self.bytes_r += len(sdata)
+                sdata = sdata.rstrip()
+                self.debug("recv("+sdata+")")
+
+            # If '\n' in data more than once we have more lines.
+            for data in sdata.split('\n'):
                 data = data.rstrip()
-                self.info("recv("+data+")")
-            
-            # "##,imei:35971004071XXXX,A;
-            if data[0:7] == "##,imei": # FIRST CONTACT
-                imei_re = re.compile("##,imei:(\d+),A;")
-                m = imei_re.match(data)
-                if m:
-                    self.imei = m.group(1)
-                self.logger = glogger
-                self.info("Init: imei "+self.imei)
-                # create imei file
-                try:
-                    fp_imei = open(self.imeifile, 'w')
-                    fp_imei.write(self.imei)
-                    fp_imei.close()
-                except:
-                    self.error("Could not create 'imei' file")
-                    self.loop = False
-                #os.utime(last, None)
-                self.send("LOAD")
-                self.on_start()
-                time.sleep(1)
-                # 
-                for (rex, out_str) in startups:
-                    if re.match(rex, self.imei):
-                        self.debug('Found startup entry.')
-                        cmd = out_str.replace("IMEI", self.imei)
-                        self.send(cmd)
-                #
-                self.last = time.time()
-                self.counter = self.counts
-            if data == self.imei+";": #"35971004071XXXX;":
-                self.send("ON")
-                self.last = time.time()
-                self.counter = self.counts
-                os.utime(self.lastfile, None)
-            #imei:35971004071XXXX,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
-            #imei:35971004071XXXX,tracker,000000000,,L,,,177f,,a122,,,;
-            # check for L(ost) of F(ix) maybe also?  ^
-            if data[0:4] == "imei":
-                data = data[:-1] #remove ;
-                parts = data.split(',')
-                if len(parts) > 11:
+                self.info("line: ("+data+")")
+
+                # "##,imei:35971004071XXXX,A;
+                if data[0:7] == "##,imei": # FIRST CONTACT
+                    imei_re = re.compile("##,imei:(\d+),A;")
+                    m = imei_re.match(data)
+                    if m:
+                        self.imei = m.group(1)
+                    self.logger = glogger
+                    self.info("Init: imei "+self.imei)
+                    # create imei file
+                    try:
+                        fp_imei = open(self.imeifile, 'w')
+                        fp_imei.write(self.imei)
+                        fp_imei.close()
+                    except:
+                        self.error("Could not create 'imei' file")
+                        self.loop = False
+                    #os.utime(last, None)
+                    self.send("LOAD")
+                    self.on_start()
+                    time.sleep(1)
+                    # 
+                    for (rex, out_str) in startups:
+                        if re.match(rex, self.imei):
+                            self.debug('Found startup entry.')
+                            cmd = out_str.replace("IMEI", self.imei)
+                            self.send(cmd)
+                    #
                     self.last = time.time()
                     self.counter = self.counts
-                    os.utime(self.lastfile, None) #mark OK
-                    #print parts[7],parts[8],parts[9],parts[10]
-                    #
-                    # parse messages "help me", "et", etc?
-                    # imei:35971004071XXXX,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                    # imei:35971004071XXXX,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                    # imei:35971004071XXXX,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                    if parts[8] != "":
-                        #5620.2932 = ddmm.mmmm
+                if data == self.imei+";": #"35971004071XXXX;":
+                    self.send("ON")
+                    self.last = time.time()
+                    self.counter = self.counts
+                    os.utime(self.lastfile, None)
+                #imei:35971004071XXXX,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
+                #imei:35971004071XXXX,tracker,000000000,,L,,,177f,,a122,,,;
+                # check for L(ost) of F(ix) maybe also?  ^
+                if data[0:4] == "imei":
+                    data = data[:-1] #remove ;
+                    parts = data.split(',')
+                    if len(parts) > 11:
+                        self.last = time.time()
+                        self.counter = self.counts
+                        os.utime(self.lastfile, None) #mark OK
+                        #print parts[7],parts[8],parts[9],parts[10]
                         #
-                        ddmmmmmm = float(parts[7])
-                        degs = int(ddmmmmmm / 100)
-                        mins = ddmmmmmm - (degs*100)
-                        lat = degs + mins/60
-                        if parts[8] == "S":
-                            lat = -lat
-                        self.lat = round(lat, 5)
-                        ddmmmmmm = float(parts[9])
-                        degs = int(ddmmmmmm / 100)
-                        mins = ddmmmmmm - (degs*100)
-                        lon = degs + mins/60
-                        if parts[10] == "W":
-                            lon = -lon
-                        self.lon = round(lon, 5)
-                        #
-                        self.spd = float(parts[11])*0.44704 #mi/h,to km/h,to m/s
-                        self.bearing = -1
-                        if parts[12] != "":
-                            self.bearing = parts[12]
-                        #
-                        with open(self.infofile, "w") as f:
-                            pickle.dump((self.lat,self.lon,self.spd,self.bearing,self.imei,self.wkey), f)
-                        #
-                        msg = parts[1]
-                        if msg != "tracker": #could be SOS, battery low, etc.
-                            self.info("info: "+msg)
-            time.sleep(1)
-            #
-            if self.counter <= 0:
-                self.debug("Count-out, exiting")
-                self.loop = False
-            # Check for a command in cmd file
-            if self.cmdfile and os.path.exists(self.cmdfile):
-                try:
-                    fp_cmd = open(self.cmdfile, 'r')
-                    cmd = fp_cmd.readline()
-                    cmd = cmd[0:-1]
-                    fp_cmd.close()
-                    new_cmd = self.cmdfile+"_"+str(int(time.time()))
-                    #os.unlink(self.cmdfile) #or move to "cmd_timestamp"
-                    shutil.move(self.cmdfile, new_cmd)
-                    self.debug("cmd moved to "+new_cmd)
-                    if cmd[0:1] == 'C':
-                        sec = int(cmd[1:])
-                        cmd = "**,imei:"+self.imei+",C,"+str(sec)+"s"
-                        self.info(cmd)
-                        time.sleep(1)
-                        self.request.send(cmd+"\n")
-                        self.bytes_s += (len(cmd) + 1)
-                    if cmd[0:1] == 'E': #clear "help me" message
-                        cmd = "**,imei:"+self.imei+",E"
-                        self.info(cmd)
-                        time.sleep(1)
-                        self.request.send(cmd+"\n")
-                        self.bytes_s += (len(cmd) + 1)
-                    if cmd[0:1] == 'G': #clear "help me" message
-                        cmd = "**,imei:"+self.imei+",G"
-                        self.info(cmd)
-                        time.sleep(1)
-                        self.request.send(cmd+"\n")
-                        self.bytes_s += (len(cmd) + 1)
-                except:
-                    self.error("Could not handle 'cmd' file.")
-            # Write receive/send stats
-            with open(self.bytesfile, "w") as f:
-                pickle.dump((self.bytes_r, self.bytes_s), f)
+                        # parse messages "help me", "et", etc?
+                        # imei:35971004071XXXX,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:35971004071XXXX,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:35971004071XXXX,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        if parts[8] != "":
+                            #5620.2932 = ddmm.mmmm
+                            #
+                            ddmmmmmm = float(parts[7])
+                            degs = int(ddmmmmmm / 100)
+                            mins = ddmmmmmm - (degs*100)
+                            lat = degs + mins/60
+                            if parts[8] == "S":
+                                lat = -lat
+                            self.lat = round(lat, 5)
+                            ddmmmmmm = float(parts[9])
+                            degs = int(ddmmmmmm / 100)
+                            mins = ddmmmmmm - (degs*100)
+                            lon = degs + mins/60
+                            if parts[10] == "W":
+                                lon = -lon
+                            self.lon = round(lon, 5)
+                            #
+                            self.spd = float(parts[11])*0.44704 #mi/h,to km/h,to m/s
+                            self.bearing = -1
+                            if parts[12] != "":
+                                self.bearing = parts[12]
+                            #
+                            #'imei, lat, lon, spd, bearing, acc
+                            self.pos = Pos(self.imei, self.lat,self.lon,self.spd,self.bearing,self.acc,self.posidx)
+                            with open(self.infofile, "w") as f:
+                                pickle.dump(self.pos, f)
+                            self.posidx += 1
+                            #
+                            msg = parts[1]
+                            if msg != "tracker": #could be SOS, battery low, etc.
+                                self.info("info: "+msg)
+                time.sleep(.1)
+                #
+                if self.counter <= 0:
+                    self.debug("Count-out, exiting")
+                    self.loop = False
+                # Check for a command in cmd file
+                if self.cmdfile and os.path.exists(self.cmdfile):
+                    try:
+                        fp_cmd = open(self.cmdfile, 'r')
+                        cmd = fp_cmd.readline()
+                        cmd = cmd[0:-1]
+                        fp_cmd.close()
+                        new_cmd = self.cmdfile+"_"+str(int(time.time()))
+                        #os.unlink(self.cmdfile) #or move to "cmd_timestamp"
+                        shutil.move(self.cmdfile, new_cmd)
+                        self.debug("cmd moved to "+new_cmd)
+                        if cmd[0:1] == 'C':
+                            sec = int(cmd[1:])
+                            cmd = "**,imei:"+self.imei+",C,"+str(sec)+"s"
+                            self.info(cmd)
+                            time.sleep(1)
+                            self.request.send(cmd+"\n")
+                            self.bytes_s += (len(cmd) + 1)
+                        if cmd[0:1] == 'E': #clear "help me" message
+                            cmd = "**,imei:"+self.imei+",E"
+                            self.info(cmd)
+                            time.sleep(1)
+                            self.request.send(cmd+"\n")
+                            self.bytes_s += (len(cmd) + 1)
+                        if cmd[0:1] == 'G': #clear "help me" message
+                            cmd = "**,imei:"+self.imei+",G"
+                            self.info(cmd)
+                            time.sleep(1)
+                            self.request.send(cmd+"\n")
+                            self.bytes_s += (len(cmd) + 1)
+                    except:
+                        self.error("Could not handle 'cmd' file.")
+                # Write receive/send stats
+                with open(self.bytesfile, "w") as f:
+                    pickle.dump((self.bytes_r, self.bytes_s), f)
+
         self.info('handle ready')
         return
 
@@ -298,7 +308,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
             fp_exit.close()
         except:
             self.error("Could not create 'exit' file")
-        self.info( "bytes read="+str(self.bytes_r)+" bytes sent="+str(self.bytes_s) )
+        self.info( "bytes read="+str(self.bytes_r)+" bytes sent="+str(self.bytes_s)+" points="+str(self.posidx) )
         return SocketServer.BaseRequestHandler.finish(self)
 
 class TK102Server(SocketServer.ForkingMixIn, SocketServer.TCPServer):
