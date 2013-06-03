@@ -68,7 +68,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         Called when a new tracker is initialized.
         """
-        #send_email("pberck@gmail.com", "pberck@gmail.com", "Tracker", "Tracker started");
+        #send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
         if self.poshandler:
             self.poshandler.on_start(self)
 
@@ -183,7 +183,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                 data = data.rstrip()
                 self.info("line: ("+data+")")
 
-                # "##,imei:359710040714629,A;
+                # "##,imei:35971004071XXXX,A;
                 if data[0:7] == "##,imei": # FIRST CONTACT
                     imei_re = re.compile("##,imei:(\d+),A;")
                     m = imei_re.match(data)
@@ -213,13 +213,13 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     self.poshandler = POSHandler( self ) 
                     self.on_start()
 
-                if data == self.imei+";": #"359710040714629;":
+                if data == self.imei+";": #"35971004071XXXX;":
                     self.send("ON")
                     self.last = time.time()
                     self.counter = self.counts
                     os.utime(self.lastfile, None)
-                #imei:359710040714629,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
-                #imei:359710040714629,tracker,000000000,,L,,,177f,,a122,,,;
+                #imei:35971004071XXXX,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
+                #imei:35971004071XXXX,tracker,000000000,,L,,,177f,,a122,,,;
                 # check for L(ost) of F(ix) maybe also?  ^
                 if data[0:4] == "imei":
                     data = data[:-1] #remove ;
@@ -231,9 +231,9 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                         #print parts[7],parts[8],parts[9],parts[10]
                         #
                         # parse messages "help me", "et", etc?
-                        # imei:359710040714629,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                        # imei:359710040714629,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
-                        # imei:359710040714629,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:35971004071XXXX,et,1304041745,,F,164528.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:35971004071XXXX,help me,1304041743,,F,164345.000,A,5150.6452,N,00551.9452,E,0.00,0;
+                        # imei:35971004071XXXX,tracker,1304041747,,F,164726.000,A,5150.6452,N,00551.9452,E,0.00,0;
                         if parts[8] != "":
                             #5620.2932 = ddmm.mmmm
                             #
@@ -368,7 +368,7 @@ def send_email(sender, recipient, subject, body ):
     smtp.ehlo()
     smtp.starttls()
     smtp.ehlo
-    smtp.login("pberck@gmail.com", "PASS")
+    smtp.login("USER@gmail.com", "PASS")
     smtp.sendmail(sender, recipient, msg.as_string())
     smtp.close()
     '''
@@ -392,12 +392,12 @@ if __name__ == '__main__':
     import threading
 
     PORT     = 9000
-    SMTPHOST = "mail.kalenda.se"
+    SMTPHOST = "mail.SERVER"
     SMTPPORT = 26
-    SMTPUSER = "kalendas"
-    SMTPPASS = "8Kyskum9"
+    SMTPUSER = "mail.USER"
+    SMTPPASS = "mail.PASS"
 
-    #startups = { ("359710040714629", "**,imei:IMEI,C,300s") ]
+    #startups = { ("35971004071XXXX", "**,imei:IMEI,C,300s") ]
     startups = [ ("\d+" , "**,imei:IMEI,C,300s") ] #if imei matches, send string, replaces IMEI with real imei.
 
     # Remove left over directories form last time.
