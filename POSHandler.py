@@ -45,6 +45,11 @@ class POSHandler():
         pass
 
 def send_email(sender, recipient, subject, body ):
+    SMTPHOST = "HOST"
+    SMTPPORT = 25
+    SMTPUSER = "USER"
+    SMTPPASS = "PASS"
+
     header_charset = 'UTF-8' 
 
     # We must choose the body charset manually

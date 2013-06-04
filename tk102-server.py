@@ -45,7 +45,7 @@ Pos = namedtuple('Pos', 'imei, lat, lon, spd, bearing, acc, idx')
 class TK102RequestHandler(SocketServer.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.logger = glogger #logging.getLogger('TK102Handler')
-        self.logger.debug('__init__')
+        self.logger.debug('New request')
         SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
         return
 
@@ -340,12 +340,6 @@ if __name__ == '__main__':
     import socket
     import threading
 
-    PORT     = 9000
-    SMTPHOST = "mail.SERVER"
-    SMTPPORT = 26
-    SMTPUSER = "mail.USER"
-    SMTPPASS = "mail.PASS"
-
     #startups = { ("35971004071XXXX", "**,imei:IMEI,C,300s") ]
     startups = [ ("\d+" , "**,imei:IMEI,C,300s") ] #if imei matches, send string, replaces IMEI with real imei.
 
@@ -358,6 +352,7 @@ if __name__ == '__main__':
             glogger.info("Time delta: %s", str(datetime.timedelta(seconds=td)))
             shutil.rmtree(d)
 
+    PORT     = 9000
     address  = ('', PORT) 
     server   = TK102Server(address, TK102RequestHandler)
     ip, port = server.server_address 
@@ -398,15 +393,15 @@ if __name__ == '__main__':
                         f = open(d+"/imei", 'r')
                         imei = "invalid"
                         try:
-                            imei = int(f.readline())
+                            with open(d+"/imei", "r") as f:
+                                imei = str(f.readline())
                         except:
-                            pass
-                        f.close()
+                            glogger.exception("Could not read 'imei' file.")
                         glogger.debug("Killing: "+str(tpid)+" imei "+str(imei))
                         try:
                             os.kill(tpid, signal.SIGTERM)
                         except:
-                            glogger.error("Could not kill process "+str(tpid)) #probablyy already gone
+                            glogger.error("Could not kill process "+str(tpid)) #probably already gone
                         # create killed file
                         try:
                             fp_killed = open(d+"/exit", 'w')
@@ -420,6 +415,6 @@ if __name__ == '__main__':
                                 (bytes_r, bytes_s) = pickle.load(f)
                             glogger.info( str(imei)+": bytes read="+str(bytes_r)+" bytes sent="+str(bytes_s))
                         except:
-                            glogger.exception("Could not create 'bytes' file.")
+                            glogger.exception("Could not read 'bytes' file.")
         except KeyboardInterrupt:
             sys.exit(0)
