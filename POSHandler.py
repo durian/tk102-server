@@ -12,33 +12,39 @@ class POSHandler():
     def __init__(self, obj):
     	self.obj = obj
 
-    def on_start(self, obj):
+    def on_start(self):
         """
         Called when a new tracker is initialized.
         """
         #send_email("sender@invalid.com", "receiver@invalid.com", "Tracker", "Tracker started")
         pass
 
-    def on_finish(self, obj):
+    def on_finish(self):
         """
         Called before the thread exits.
         """
         pass
 
-    def on_position(self, obj):
+    def on_exit(self, imei):
+        """
+        Called after the thread exits/has been killed
+        """
+        pass
+
+    def on_position(self):
         """
         Called everytime we receive a GPS position string.
         """
         #obj.info( repr(obj.pos) )
         pass
 
-    def on_stationary(self, obj):
+    def on_stationary(self):
         """
         Called if last two positions are the same.
         """
         pass
 
-    def on_start_move(self, obj):
+    def on_start_move(self):
         """
         Called if moving again after stationary destection.
         """

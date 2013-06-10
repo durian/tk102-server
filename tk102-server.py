@@ -336,6 +336,13 @@ def determine_td(d):
     td = abs(td0 - td1)
     return td
 
+def on_exit(imei):
+    """
+    Called when the tread is killed/tracker disappeared
+    """
+    ph = POSHandler( None )
+    ph.on_exit(imei)
+
 if __name__ == '__main__':
     import socket
     import threading
@@ -402,6 +409,8 @@ if __name__ == '__main__':
                             os.kill(tpid, signal.SIGTERM)
                         except:
                             glogger.error("Could not kill process "+str(tpid)) #probably already gone
+                        #
+                        on_exit(imei)
                         # create killed file
                         try:
                             fp_killed = open(d+"/exit", 'w')
