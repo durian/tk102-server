@@ -64,7 +64,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         #send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
         if self.poshandler:
-            self.poshandler.on_start(self)
+            self.poshandler.on_start()
 
     def on_finish(self):
         """
