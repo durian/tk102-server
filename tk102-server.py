@@ -71,28 +71,28 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         Called before the thread exits.
         """
         if self.poshandler:
-            self.poshandler.on_finish(self)
+            self.poshandler.on_finish()
 
     def on_position(self):
         """
         Called everytime we receive a GPS position string.
         """
         if self.poshandler:
-            self.poshandler.on_position(self)
+            self.poshandler.on_position()
 
     def on_stationary(self):
         """
         Called if last two positions are the same. To be implemented.
         """
         if self.poshandler:
-            self.poshandler.on_stationary(self)
+            self.poshandler.on_stationary()
 
     def on_start_move(self):
         """
         Called if moving again after stationary destection. To be implemented.
         """
         if self.poshandler:
-            self.poshandler.on_start_move(self)
+            self.poshandler.on_start_move()
 
     def send(self, msg):
         self.debug('send: '+msg)
