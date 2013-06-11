@@ -62,7 +62,6 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         Called when a new tracker is initialized.
         """
-        #send_email("USER@gmail.com", "USER@gmail.com", "Tracker", "Tracker started");
         if self.poshandler:
             self.poshandler.on_start()
 
@@ -102,9 +101,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         self.server.socket.setblocking(0)
         #self.server.socket.settimeout(10.0)
-        #can write a "ping" file aver each receiv, have other thread heck
-        #if it hangs in recv
-        cur_pid = os.getpid() #threading.current_thread() 
+        cur_pid         = os.getpid() #threading.current_thread() 
         self.logger.info("handle start, pid: "+str(cur_pid))
         self.loop       = True
         self.counts     = 120
@@ -306,7 +303,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         return
 
     def finish(self):
-        self.info('finish')
+        self.info('handle finish')
         self.on_finish()
         try:
             fp_exit = open(self.exitfile, 'w')
@@ -338,7 +335,7 @@ def determine_td(d):
 
 def on_exit(imei):
     """
-    Called when the tread is killed/tracker disappeared
+    Called when the tread is killed/tracker disappeared.
     """
     ph = POSHandler( None )
     ph.on_exit(imei)
