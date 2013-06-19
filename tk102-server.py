@@ -54,6 +54,8 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
 
     def info(self, msg):
         self.logger.info("[%s] "+str(msg), self.imei)
+        if self.poshandler:
+            self.poshandler.on_info(str(msg))
 
     def error(self, msg):
         self.logger.error("[%s] "+str(msg), self.imei)

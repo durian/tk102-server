@@ -31,6 +31,12 @@ class POSHandler():
         """
         pass
 
+    def on_info(self, msg):
+        """
+        Called when message other than "tracker" has been received.
+        """
+        pass
+
     def on_position(self):
         """
         Called everytime we receive a GPS position string.
