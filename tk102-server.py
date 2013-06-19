@@ -54,8 +54,6 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
 
     def info(self, msg):
         self.logger.info("[%s] "+str(msg), self.imei)
-        if self.poshandler:
-            self.poshandler.on_info(str(msg))
 
     def error(self, msg):
         self.logger.error("[%s] "+str(msg), self.imei)
@@ -73,6 +71,10 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
         """
         if self.poshandler:
             self.poshandler.on_finish()
+
+    def on_msg(self, msg):
+        if self.poshandler:
+            self.poshandler.on_msg(str(msg))
 
     def on_position(self):
         """
@@ -172,9 +174,11 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                 self.debug("recv("+sdata+")")
 
             # If '\n' in data more than once we have more lines.
+            lc = 0
             for data in sdata.split('\n'):
                 data = data.rstrip()
-                self.info("line: ("+data+")")
+                self.info("line["+str(lc)+"]: ("+data+")")
+                lc += 1
 
                 # "##,imei:35971004071XXXX,A;
                 if data[0:7] == "##,imei": # FIRST CONTACT
@@ -206,7 +210,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                     self.poshandler = POSHandler( self ) 
                     self.on_start()
 
-                if data == self.imei+";": #"35971004071XXXX;":
+                elif data == self.imei+";": #"35971004071XXXX;":
                     self.send("ON")
                     self.last = time.time()
                     self.counter = self.counts
@@ -214,7 +218,7 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                 #imei:35971004071XXXX,tracker,1212220931,,F,083137.000,A,5620.2932,N,01253.7255,E,0.00,0;
                 #imei:35971004071XXXX,tracker,000000000,,L,,,177f,,a122,,,;
                 # check for L(ost) of F(ix) maybe also?  ^
-                if data[0:4] == "imei":
+                elif data[0:4] == "imei":
                     data = data[:-1] #remove ;
                     parts = data.split(',')
                     if len(parts) > 11:
@@ -259,7 +263,9 @@ class TK102RequestHandler(SocketServer.BaseRequestHandler):
                             #
                             msg = parts[1]
                             if msg != "tracker": #could be SOS, battery low, etc.
-                                self.info("info: "+msg)
+                                self.on_msg(msg)
+                else:
+                    self.info(data)
                 time.sleep(.1)
                 #
                 if self.counter <= 0:

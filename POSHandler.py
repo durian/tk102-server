@@ -31,7 +31,7 @@ class POSHandler():
         """
         pass
 
-    def on_info(self, msg):
+    def on_msg(self, msg):
         """
         Called when message other than "tracker" has been received.
         """
