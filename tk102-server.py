@@ -341,12 +341,12 @@ def determine_td(d):
     td = abs(td0 - td1)
     return td
 
-def on_exit(imei):
+def on_exit(imei, msg):
     """
     Called when the tread is killed/tracker disappeared.
     """
     ph = POSHandler( None )
-    ph.on_exit(imei)
+    ph.on_exit(imei, msg)
 
 if __name__ == '__main__':
     import socket
@@ -414,8 +414,6 @@ if __name__ == '__main__':
                             os.kill(tpid, signal.SIGTERM)
                         except:
                             glogger.error("Could not kill process "+str(tpid)) #probably already gone
-                        #
-                        on_exit(imei)
                         # create killed file
                         try:
                             fp_killed = open(d+"/exit", 'w')
@@ -430,5 +428,6 @@ if __name__ == '__main__':
                             glogger.info( str(imei)+": bytes read="+str(bytes_r)+" bytes sent="+str(bytes_s))
                         except:
                             glogger.exception("Could not read 'bytes' file.")
+                        on_exit(imei, "After "+str(datetime.timedelta(seconds=td))+"\nbytes read="+str(bytes_r)+" bytes sent="+str(bytes_s))
         except KeyboardInterrupt:
             sys.exit(0)

@@ -25,7 +25,7 @@ class POSHandler():
         """
         pass
 
-    def on_exit(self, imei):
+    def on_exit(self, imei, msg=""):
         """
         Called after the thread exits/has been killed
         """
