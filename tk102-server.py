@@ -402,7 +402,6 @@ if __name__ == '__main__':
                         f.close()
                         # write in info table that tracker died here? imei?
                         glogger.info("No more data from tracker (%s).", str(tpid))
-                        f = open(d+"/imei", 'r')
                         imei = "invalid"
                         try:
                             with open(d+"/imei", "r") as f:
