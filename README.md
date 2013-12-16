@@ -23,6 +23,8 @@ If server does not receive <code>\_IMEI\_;</code> every 90 seconds, it times out
 
 ## Sending commands
 
+A command can be send to a tracker by writing something to a file in the tracker's directory.
+
 * cmd  : read by the thread for commands. After a command is read, the cmd file is copied to cmd_TIMESTAMP where TIMESTAMP is the current unix epoch timestamp. For example, <code>'echo "C600" > cmd'</code> sets the interval on the tracker to 10 minutes. It sends the command: <code>**,\_IMEI\_,C,600s</code> to the tracker. The following are implemented:
 
 1. Cnnn : sets tracker interval to nnn seconds
